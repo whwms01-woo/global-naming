@@ -348,6 +348,38 @@
             66% { transform: translate(-10px, 15px) scale(0.95) rotate(-5deg); }
             100% { transform: translate(0, 0) scale(1) rotate(0deg); }
         }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 15px;
+            }
+            .container {
+                padding: 25px 20px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .floating-icons .icon {
+                font-size: 2rem;
+                width: 70px; height: 70px;
+            }
+            .passport-card {
+                padding: 18px;
+            }
+            .passport-name {
+                font-size: 1.6rem;
+            }
+            .watermark {
+                bottom: 10px; right: 10px;
+                font-size: 0.75rem;
+                padding: 5px 10px;
+            }
+        }
     </style>
 </head>
 <body>
