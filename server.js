@@ -15,6 +15,44 @@ app.use(express.static(__dirname));
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Robust Gemini Helper with Model Fallbacks and Safe JSON Extraction
+async function generateGeminiContent(prompt) {
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
+    const errors = [];
+
+    for (const modelName of models) {
+        try {
+            console.log(`[Gemini] Attempting generation with model: ${modelName}...`);
+            const model = genAI.getGenerativeModel({ 
+                model: modelName,
+                generationConfig: { responseMimeType: "application/json" }
+            });
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            let text = response.text();
+            
+            // Clean up markdown block if present
+            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+            
+            // Extract strictly from { to }
+            const startIndex = text.indexOf('{');
+            const endIndex = text.lastIndexOf('}');
+            if (startIndex !== -1 && endIndex !== -1) {
+                text = text.substring(startIndex, endIndex + 1);
+            }
+            
+            const jsonResult = JSON.parse(text);
+            console.log(`[Gemini] Successfully generated and parsed content using model: ${modelName}!`);
+            return jsonResult;
+        } catch (err) {
+            console.error(`[Gemini] Model ${modelName} failed:`, err.message);
+            errors.push(`${modelName}: ${err.message}`);
+        }
+    }
+    
+    throw new Error(`모든 AI 모델 호출 실패:\n- ${errors.join('\n- ')}`);
+}
+
 // Naming API Endpoint
 app.post('/api/name', async (req, res) => {
     try {
@@ -64,33 +102,38 @@ app.post('/api/name', async (req, res) => {
             "greeting": "타겟 국가의 언어로 하는 짧은 인사말 (예: Bonjour! 좋은 이름이네요!)"
         }`;
 
-        // generationConfig를 통해 JSON 모드를 강제하여 응답 속도를 극대화하고 형식을 보장합니다.
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            generationConfig: { responseMimeType: "application/json" }
-        });
-        
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text();
-        
-        // Clean up markdown block if present
-        text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        
-        // Extract strictly from { to }
-        const startIndex = text.indexOf('{');
-        const endIndex = text.lastIndexOf('}');
-        if (startIndex !== -1 && endIndex !== -1) {
-            text = text.substring(startIndex, endIndex + 1);
-        }
-
-        const jsonResult = JSON.parse(text);
+        const jsonResult = await generateGeminiContent(prompt);
         res.json(jsonResult);
         
     } catch (error) {
         console.error('Naming API Error:', error);
-        res.status(500).json({ error: error.message || "이름 생성 중 오류가 발생했습니다." });
+        res.status(500).json({ error: `작명 분석 에러: ${error.message}` });
     }
+});
+
+// Diagnosis endpoint accessible via browser
+app.get('/api/diag', async (req, res) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+    const diag = {
+        apiKeyStatus: apiKey ? `LOADED (Length: ${apiKey.length})` : "NOT LOADED",
+        apiKeyPreview: apiKey ? `${apiKey.substring(0, 5)}...${apiKey.slice(-5)}` : "NONE",
+        models: [],
+        error: null
+    };
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await response.json();
+        if (data.models) {
+            diag.models = data.models.map(m => m.name);
+        } else if (data.error) {
+            diag.error = data.error.message;
+        } else {
+            diag.error = JSON.stringify(data);
+        }
+    } catch (err) {
+        diag.error = err.message;
+    }
+    res.json(diag);
 });
 
 // Serve index.html
@@ -101,3 +144,29 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Global Naming Server is running at http://localhost:${port}`);
 });
+
+// Startup Diagnostic Logs to debug API key and model availability
+(async () => {
+    console.log("=== STARTUP DIAGNOSTICS ===");
+    const apiKey = process.env.GEMINI_API_KEY;
+    console.log("GEMINI_API_KEY status:", apiKey ? `LOADED (Length: ${apiKey.length})` : "NOT LOADED");
+    if (apiKey) {
+        console.log("GEMINI_API_KEY preview:", `${apiKey.substring(0, 5)}...${apiKey.slice(-5)}`);
+        try {
+            console.log("[Diagnostic] Fetching available models from Google API...");
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+            const data = await response.json();
+            if (data.models) {
+                console.log("[Diagnostic] Successfully fetched models! Available models:");
+                data.models.forEach(m => console.log(`  - ${m.name}`));
+            } else if (data.error) {
+                console.log("[Diagnostic] Google API returned an error:", data.error.message);
+            } else {
+                console.log("[Diagnostic] Unknown response structure:", data);
+            }
+        } catch (err) {
+            console.error("[Diagnostic] Failed to fetch models:", err.message);
+        }
+    }
+    console.log("===========================");
+})();

@@ -636,15 +636,18 @@
             document.getElementById('loader').style.display = 'block';
 
             try {
-                const response = await fetch('/api/name', {
+                const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+                    ? 'http://localhost:3000'
+                    : 'https://global-naming.onrender.com';
+                const response = await fetch(`${apiBase}/api/name`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ originalName, originCountry, targetCountry, gender, vibe, mbti })
                 });
 
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || '서버 응답 오류');
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error || `서버 에러 (${response.status})`);
                 }
                 
                 const data = await response.json();
