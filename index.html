@@ -349,6 +349,43 @@
             100% { transform: translate(0, 0) scale(1) rotate(0deg); }
         }
 
+        /* Intro Card */
+        .intro-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 50px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .intro-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(129, 140, 248, 0.5);
+            box-shadow: 0 15px 40px rgba(129, 140, 248, 0.2);
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-bottom: 25px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: white;
+        }
+
         /* Mobile Responsiveness */
         @media (max-width: 600px) {
             body {
@@ -402,7 +439,25 @@
             <p class="subtitle">나에게 꼭 맞는 외국 이름은 무엇일까?</p>
         </header>
 
-        <div class="form-group">
+        <!-- Intro Section -->
+        <div id="intro-section">
+            <div class="intro-card" onclick="startNaming()">
+                <div style="font-size: 4rem; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255,255,255,0.3);">🛂</div>
+                <h3 style="font-size: 1.6rem; color: white; margin-bottom: 10px;">글로벌 신분증 발급받기</h3>
+                <p style="color: #cbd5e1; font-size: 1rem; line-height: 1.5;">
+                    전 세계 14개국 지원!<br>나와 가장 잘 어울리는 외국 이름을 찾아보세요.
+                </p>
+                <div style="margin-top: 30px; display: inline-block; padding: 10px 25px; background: linear-gradient(135deg, #6366f1, #d946ef); border-radius: 30px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);">
+                    시작하기 ✈️
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Section -->
+        <div id="form-section" style="display: none; animation: slideUp 0.5s ease;">
+            <button class="back-btn" onclick="goBack()">◀ 처음으로</button>
+
+            <div class="form-group">
             <label>당신의 원래 이름 (국적)</label>
             <div class="grid-2">
                 <input type="text" id="originalName" placeholder="예: 우경석" required>
@@ -490,6 +545,17 @@
     <div class="watermark">제작자: 우경석</div>
 
     <script>
+        function startNaming() {
+            document.getElementById('intro-section').style.display = 'none';
+            document.getElementById('form-section').style.display = 'block';
+        }
+
+        function goBack() {
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('intro-section').style.display = 'block';
+            document.getElementById('result-section').style.display = 'none';
+        }
+
         async function generateName() {
             const originalName = document.getElementById('originalName').value;
             if (!originalName) {
