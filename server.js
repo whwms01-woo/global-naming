@@ -39,7 +39,8 @@ app.post('/api/name', async (req, res) => {
         [요구사항]
         1. 타겟 국가에서 실제로 자연스럽게 쓰이는 이름 3가지를 추천해줘.
         2. 각 이름이 왜 이 사용자에게 어울리는지(발음이 비슷한지, 뜻이 통하는지, 분위기가 맞는지 등) 이유를 짧고 재미있게 설명해줘.
-        3. 반환은 반드시 아래 JSON 형식으로만 해줘. 마크다운(\`\`\`) 없이 순수 JSON만 반환할 것.
+        3. 속도 최적화를 위해 의미(meaning), 추천 이유(reason), 인사말(greeting)은 모두 1~2문장 내외로 극도로 짧고 간결하게 작성해줘. 불필요하게 서술형 설명이 길어지면 절대 안 돼!
+        4. 반환은 반드시 아래 JSON 형식으로만 해줘. 마크다운(\`\`\`) 없이 순수 JSON만 반환할 것.
         
         [JSON 형식]
         {
@@ -63,7 +64,11 @@ app.post('/api/name', async (req, res) => {
             "greeting": "타겟 국가의 언어로 하는 짧은 인사말 (예: Bonjour! 좋은 이름이네요!)"
         }`;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+        // generationConfig를 통해 JSON 모드를 강제하여 응답 속도를 극대화하고 형식을 보장합니다.
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-3.1-flash-lite",
+            generationConfig: { responseMimeType: "application/json" }
+        });
         
         const result = await model.generateContent(prompt);
         const response = await result.response;

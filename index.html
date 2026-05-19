@@ -584,7 +584,7 @@
             </div>
         </div>
 
-        <button class="submit-btn" onclick="generateName()">내 글로벌 이름 발급받기 ✈️</button>
+        <button id="submit-btn" class="submit-btn" onclick="generateName()">내 글로벌 이름 발급받기 ✈️</button>
 
         <div class="loader" id="loader">
             🌐 세계 각국의 언어 데이터를 분석 중입니다...
@@ -594,7 +594,7 @@
             <div class="greeting" id="greeting-text"></div>
             <div id="names-container"></div>
             
-            <button class="submit-btn" style="background: #e2e8f0; color: #475569; margin-top: 20px;" onclick="resetForm()">다시하기</button>
+            <button id="reset-btn" class="submit-btn" style="background: #e2e8f0; color: #475569; margin-top: 20px;" onclick="resetForm()">다시하기</button>
         </div>
         </div>
     </div>
@@ -611,6 +611,10 @@
             document.getElementById('form-section').style.display = 'none';
             document.getElementById('intro-section').style.display = 'block';
             document.getElementById('result-section').style.display = 'none';
+            
+            // 처음으로 돌아갈 때 제출 버튼과 로더 상태를 초기화해 줍니다. (버튼 사라짐 버그 해결)
+            document.getElementById('submit-btn').style.display = 'block';
+            document.getElementById('loader').style.display = 'none';
         }
 
         async function generateName() {
@@ -626,7 +630,8 @@
             const vibe = document.getElementById('vibe').value;
             const mbti = document.getElementById('mbti').value;
 
-            document.querySelector('.submit-btn').style.display = 'none';
+            // 특정 ID를 타겟하여 다른 버튼이 숨겨지거나 오작동하는 것을 방지합니다.
+            document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('result-section').style.display = 'none';
             document.getElementById('loader').style.display = 'block';
 
@@ -681,14 +686,14 @@
             } catch (error) {
                 alert('에러 상세 내용: ' + error.message);
                 console.error(error);
-                document.querySelector('.submit-btn').style.display = 'block';
+                document.getElementById('submit-btn').style.display = 'block';
                 document.getElementById('loader').style.display = 'none';
             }
         }
 
         function resetForm() {
             document.getElementById('result-section').style.display = 'none';
-            document.querySelector('.submit-btn').style.display = 'block';
+            document.getElementById('submit-btn').style.display = 'block';
             document.getElementById('originalName').value = '';
             document.getElementById('mbti').value = '';
         }
