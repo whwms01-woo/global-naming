@@ -384,32 +384,71 @@
         /* Mobile Responsiveness */
         @media (max-width: 600px) {
             body {
-                padding: 20px 15px;
+                padding: 15px 10px;
             }
             .container {
-                padding: 25px 20px;
+                padding: 20px 15px;
+                border-radius: 18px;
             }
             h1 {
                 font-size: 1.8rem;
+                margin-bottom: 5px;
+            }
+            p.subtitle {
+                font-size: 0.95rem;
+            }
+            header {
+                margin-bottom: 20px;
+            }
+            .intro-card {
+                padding: 30px 15px;
+                border-radius: 18px;
+            }
+            .intro-card h3 {
+                font-size: 1.3rem !important;
+            }
+            .intro-card p {
+                font-size: 0.85rem !important;
+                line-height: 1.4;
+            }
+            .intro-card div {
+                margin-top: 20px !important;
+                font-size: 0.95rem !important;
+                padding: 8px 20px !important;
             }
             .grid-2 {
                 grid-template-columns: 1fr;
-                gap: 15px;
+                gap: 12px;
             }
             .floating-icons .icon {
-                font-size: 2rem;
-                width: 70px; height: 70px;
+                font-size: 1.8rem;
+                width: 60px; height: 60px;
             }
             .passport-card {
-                padding: 18px;
+                padding: 16px;
             }
             .passport-name {
-                font-size: 1.6rem;
+                font-size: 1.5rem;
             }
             .watermark {
                 bottom: 10px; 
                 right: 15px;
                 font-size: 0.75rem;
+            }
+            input, select {
+                padding: 12px;
+                font-size: 0.95rem;
+            }
+            button.submit-btn {
+                padding: 14px;
+                font-size: 1rem;
+            }
+            label {
+                font-size: 0.85rem;
+                margin-bottom: 6px;
+            }
+            .form-group {
+                margin-bottom: 16px;
             }
         }
     </style>
@@ -428,11 +467,12 @@
         <div class="icon" style="top: 80%; right: 30%; animation-delay: -1s; opacity: 0.6; transform: scale(0.7)">🪷</div> <!-- 베트남/동남아 (원경) -->
     </div>
 
+    <header>
+        <h1>🌍 글로벌 부캐 찾기</h1>
+        <p class="subtitle">나에게 꼭 맞는 외국 이름은 무엇일까?</p>
+    </header>
+
     <div class="container">
-        <header>
-            <h1>🌍 글로벌 부캐 찾기</h1>
-            <p class="subtitle">나에게 꼭 맞는 외국 이름은 무엇일까?</p>
-        </header>
 
         <!-- Intro Section -->
         <div id="intro-section">
@@ -634,6 +674,14 @@
 
         // Web TTS (Text-to-Speech) Function
         function speakName(name) {
+            if (!('speechSynthesis' in window)) {
+                alert("현재 브라우저에서는 음성 듣기 기능을 지원하지 않습니다.");
+                return;
+            }
+
+            // 모바일/iOS 브라우저 밀림 및 대기 큐 적체 버그 방지 (동기 취소)
+            window.speechSynthesis.cancel();
+
             const targetCountry = document.getElementById('targetCountry').value;
             const langMap = {
                 "미국/영국 (영어)": "en-US",
@@ -655,7 +703,12 @@
 
             const utterance = new SpeechSynthesisUtterance(name);
             utterance.lang = langMap[targetCountry] || 'en-US';
-            utterance.rate = 0.9; // 약간 천천히 발음
+            utterance.rate = 0.85; // 천천히 또박또박 발음
+            utterance.volume = 1.0;
+
+            // 중요: 모바일(특히 iOS Safari) 환경에서는 비동기(setTimeout 등)로 speak를 호출하면 
+            // 사용자 액티베이션(클릭 제스처) 신뢰를 소실하여 오디오가 강제 뮤트 처리됩니다!
+            // 따라서 딜레이 없이 클릭 핸들러 안에서 즉시(동기식) speak()를 날려야 소리가 제대로 나옵니다.
             window.speechSynthesis.speak(utterance);
         }
         // Star Background Animation
