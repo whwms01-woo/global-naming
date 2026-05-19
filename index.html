@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Naming - 내 글로벌 부캐 이름 찾기</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --primary: #818cf8;
+            --secondary: #c084fc;
+            --bg-deep: #0B0B1A;
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Star Background Canvas */
+        #starCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            padding: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #a5b4fc, #fbcfe8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(165, 180, 252, 0.3);
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 1rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        option {
+            background: #1e293b;
+            color: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 15px rgba(129, 140, 248, 0.3);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button.submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #6366f1, #d946ef);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        button.submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px -5px rgba(139, 92, 246, 0.6);
+        }
+
+        button.submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Results Section */
+        #result-section {
+            display: none;
+            margin-top: 40px;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .greeting {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 14px;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Premium Passport Card Design */
+        .passport-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,1);
+            transition: transform 0.3s ease;
+            color: #0f172a;
+            overflow: hidden;
+        }
+
+        /* Subtle map background effect */
+        .passport-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
+            background-size: cover;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .passport-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .passport-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(148, 163, 184, 0.3);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .passport-title {
+            font-size: 0.85rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .passport-name {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #1e1b4b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .listen-btn {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 50%;
+            width: 38px; height: 38px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4f46e5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .listen-btn:hover {
+            background: #e0e7ff;
+            border-color: #a5b4fc;
+            transform: scale(1.05);
+        }
+
+        .passport-details {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .detail-item strong {
+            color: #64748b;
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-item span {
+            color: #1e293b;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .reason-box {
+            background: rgba(248, 250, 252, 0.7);
+            border-left: 4px solid #6366f1;
+            padding: 16px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            color: #334155;
+            border-radius: 0 8px 8px 0;
+            line-height: 1.6;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-left-width: 4px;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 1.1rem;
+            color: #a5b4fc;
+            font-weight: 500;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* Floating Country Icons */
+        .floating-icons {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1; /* 별보단 앞, 컨테이너보단 뒤 */
+            overflow: hidden;
+        }
+
+        .floating-icons .icon {
+            position: absolute;
+            font-size: 2.8rem;
+            width: 100px; height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 은은하게 빛나는 구체 느낌 */
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 10%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            animation: floatIcon 15s infinite ease-in-out alternate;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
+        }
+
+        @keyframes floatIcon {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(15px, -25px) scale(1.05) rotate(8deg); }
+            66% { transform: translate(-10px, 15px) scale(0.95) rotate(-5deg); }
+            100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starCanvas"></canvas>
+    
+    <div class="floating-icons">
+        <div class="icon" style="top: 10%; left: 8%; animation-delay: 0s;">🗼</div> <!-- 프랑스 -->
+        <div class="icon" style="top: 25%; right: 12%; animation-delay: -3s;">🗽</div> <!-- 미국 -->
+        <div class="icon" style="top: 55%; left: 5%; animation-delay: -7s;">⛩️</div> <!-- 일본 -->
+        <div class="icon" style="top: 70%; right: 8%; animation-delay: -2s;">🏯</div> <!-- 한국/동아시아 -->
+        <div class="icon" style="top: 85%; left: 20%; animation-delay: -9s;">🥨</div> <!-- 독일 -->
+        <div class="icon" style="top: 15%; right: 35%; animation-delay: -5s;">🍕</div> <!-- 이탈리아 -->
+        <div class="icon" style="top: 40%; left: 25%; animation-delay: -11s; opacity: 0.5; transform: scale(0.6)">🪆</div> <!-- 러시아 (원경) -->
+        <div class="icon" style="top: 80%; right: 30%; animation-delay: -1s; opacity: 0.6; transform: scale(0.7)">🪷</div> <!-- 베트남/동남아 (원경) -->
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🌍 글로벌 부캐 찾기</h1>
+            <p class="subtitle">나에게 꼭 맞는 외국 이름은 무엇일까?</p>
+        </header>
+
+        <div class="form-group">
+            <label>당신의 원래 이름 (국적)</label>
+            <div class="grid-2">
+                <input type="text" id="originalName" placeholder="예: 우경석" required>
+                <select id="originCountry">
+                    <option value="한국">한국 🇰🇷</option>
+                    <option value="미국/영국/호주(영어권)">영어권 🇺🇸🇬🇧</option>
+                    <option value="중국">중국 🇨🇳</option>
+                    <option value="일본">일본 🇯🇵</option>
+                    <option value="베트남">베트남 🇻🇳</option>
+                    <option value="필리핀">필리핀 🇵🇭</option>
+                    <option value="인도네시아">인도네시아 🇮🇩</option>
+                    <option value="태국">태국 🇹🇭</option>
+                    <option value="멕시코/스페인">스페인어권 🇲🇽🇪🇸</option>
+                    <option value="프랑스">프랑스 🇫🇷</option>
+                    <option value="독일">독일 🇩🇪</option>
+                    <option value="이탈리아">이탈리아 🇮🇹</option>
+                    <option value="러시아">러시아 🇷🇺</option>
+                    <option value="기타">기타 국가 🌍</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group grid-2">
+            <div>
+                <label>성별</label>
+                <select id="gender">
+                    <option value="남성">남성 👦</option>
+                    <option value="여성">여성 👧</option>
+                    <option value="중성/상관없음">상관없음 🧑</option>
+                </select>
+            </div>
+            <div>
+                <label>작명받을 나라</label>
+                <select id="targetCountry">
+                    <option value="미국/영국 (영어)">미국/영국 (영어) 🇺🇸🇬🇧</option>
+                    <option value="프랑스">프랑스 🇫🇷</option>
+                    <option value="이탈리아">이탈리아 🇮🇹</option>
+                    <option value="독일">독일 🇩🇪</option>
+                    <option value="베트남">베트남 🇻🇳</option>
+                    <option value="태국">태국 🇹🇭</option>
+                    <option value="일본">일본 🇯🇵</option>
+                    <option value="스페인/중남미">스페인/중남미 🇪🇸🇲🇽</option>
+                    <option value="한국">한국 🇰🇷</option>
+                    <option value="중국">중국 🇨🇳</option>
+                    <option value="대만">대만 🇹🇼</option>
+                    <option value="러시아">러시아 🇷🇺</option>
+                    <option value="브라질/포르투갈">브라질/포르투갈 🇧🇷🇵🇹</option>
+                    <option value="아랍에미리트/중동">아랍/중동 🇦🇪🇸🇦</option>
+                    <option value="스웨덴/북유럽">스웨덴/북유럽 🇸🇪🇳🇴</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group grid-2">
+            <div>
+                <label>원하는 이름의 느낌</label>
+                <select id="vibe">
+                    <option value="세련되고 현대적인">✨ 세련되고 현대적인</option>
+                    <option value="우아하고 기품있는">👑 우아하고 기품있는</option>
+                    <option value="발음하기 쉽고 친근한">👋 발음하기 쉽고 친근한</option>
+                    <option value="강력하고 카리스마 있는">🔥 강력하고 카리스마 있는</option>
+                    <option value="원래 이름과 발음이 제일 비슷한">🗣️ 원래 이름과 발음이 찰떡인</option>
+                </select>
+            </div>
+            <div>
+                <label>성격 / MBTI (선택사항)</label>
+                <input type="text" id="mbti" placeholder="예: ENFP, 외향적">
+            </div>
+        </div>
+
+        <button class="submit-btn" onclick="generateName()">내 글로벌 이름 발급받기 ✈️</button>
+
+        <div class="loader" id="loader">
+            🌐 세계 각국의 언어 데이터를 분석 중입니다...
+        </div>
+
+        <div id="result-section">
+            <div class="greeting" id="greeting-text"></div>
+            <div id="names-container"></div>
+            
+            <button class="submit-btn" style="background: #e2e8f0; color: #475569; margin-top: 20px;" onclick="resetForm()">다시하기</button>
+        </div>
+    </div>
+    
+    <div class="watermark">제작자: 우경석</div>
+
+    <script>
+        async function generateName() {
+            const originalName = document.getElementById('originalName').value;
+            if (!originalName) {
+                alert('이름을 입력해주세요!');
+                return;
+            }
+
+            const originCountry = document.getElementById('originCountry').value;
+            const targetCountry = document.getElementById('targetCountry').value;
+            const gender = document.getElementById('gender').value;
+            const vibe = document.getElementById('vibe').value;
+            const mbti = document.getElementById('mbti').value;
+
+            document.querySelector('.submit-btn').style.display = 'none';
+            document.getElementById('result-section').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                const response = await fetch('/api/name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ originalName, originCountry, targetCountry, gender, vibe, mbti })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || '서버 응답 오류');
+                }
+                
+                const data = await response.json();
+                
+                document.getElementById('greeting-text').innerText = data.greeting || 'Hello!';
+                
+                const container = document.getElementById('names-container');
+                container.innerHTML = '';
+                
+                data.names.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'passport-card';
+                    card.innerHTML = `
+                        <div class="passport-header">
+                            <div class="passport-title">Global Identity Card</div>
+                            <div style="font-weight: bold; color: var(--secondary);">#0${index + 1}</div>
+                        </div>
+                        <div class="passport-name">
+                            ${item.recommendedName}
+                            <button class="listen-btn" onclick="speakName('${item.recommendedName}')" title="발음 듣기">🔊</button>
+                        </div>
+                        <div class="passport-details" style="margin-top: 15px;">
+                            <div class="detail-item">
+                                <strong>MEANING (의미)</strong>
+                                <span>${item.meaning}</span>
+                            </div>
+                        </div>
+                        <div class="reason-box">
+                            <strong>💡 발급 사유 (추천 이유)</strong><br>
+                            ${item.reason}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('result-section').style.display = 'block';
+
+            } catch (error) {
+                alert('에러 상세 내용: ' + error.message);
+                console.error(error);
+                document.querySelector('.submit-btn').style.display = 'block';
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('result-section').style.display = 'none';
+            document.querySelector('.submit-btn').style.display = 'block';
+            document.getElementById('originalName').value = '';
+            document.getElementById('mbti').value = '';
+        }
+
+        // Web TTS (Text-to-Speech) Function
+        function speakName(name) {
+            const targetCountry = document.getElementById('targetCountry').value;
+            const langMap = {
+                "미국/영국 (영어)": "en-US",
+                "프랑스": "fr-FR",
+                "이탈리아": "it-IT",
+                "독일": "de-DE",
+                "베트남": "vi-VN",
+                "태국": "th-TH",
+                "일본": "ja-JP",
+                "스페인/중남미": "es-ES",
+                "한국": "ko-KR",
+                "중국": "zh-CN",
+                "대만": "zh-TW",
+                "러시아": "ru-RU",
+                "브라질/포르투갈": "pt-BR",
+                "아랍에미리트/중동": "ar-SA",
+                "스웨덴/북유럽": "sv-SE"
+            };
+
+            const utterance = new SpeechSynthesisUtterance(name);
+            utterance.lang = langMap[targetCountry] || 'en-US';
+            utterance.rate = 0.9; // 약간 천천히 발음
+            window.speechSynthesis.speak(utterance);
+        }
+        // Star Background Animation
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, stars = [];
+
+        function initStars() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            stars = [];
+            for(let i=0; i<150; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    r: Math.random() * 1.5,
+                    opacity: Math.random(),
+                    speed: (Math.random() * 0.05) + 0.01
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, width, height);
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                ctx.fill();
+                star.opacity += star.speed;
+                if(star.opacity > 1 || star.opacity < 0) star.speed = -star.speed;
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        window.addEventListener('resize', initStars);
+        initStars();
+        drawStars();
+    </script>
+</body>
+</html>
