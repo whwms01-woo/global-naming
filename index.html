@@ -451,9 +451,133 @@
                 margin-bottom: 16px;
             }
         }
+
+        /* Beautiful Custom Error Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(11, 11, 26, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .error-modal {
+            background: linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(15, 12, 45, 0.95));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 24px;
+            padding: 35px 30px;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 30px rgba(239, 68, 68, 0.15);
+            transform: translateY(30px);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            color: white;
+            position: relative;
+        }
+
+        .modal-overlay.show .error-modal {
+            transform: translateY(0);
+        }
+
+        .error-icon {
+            font-size: 3.5rem;
+            color: #f87171;
+            margin-bottom: 18px;
+            animation: warningBounce 1.2s infinite alternate ease-in-out;
+            filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.4));
+        }
+
+        .error-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fca5a5;
+            margin-bottom: 12px;
+            letter-spacing: -0.3px;
+        }
+
+        .error-message {
+            font-size: 0.9rem;
+            color: #e2e8f0;
+            line-height: 1.6;
+            margin-bottom: 22px;
+            max-height: 180px;
+            overflow-y: auto;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: 'Consolas', 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        /* Style scrollbar for error message */
+        .error-message::-webkit-scrollbar {
+            width: 6px;
+        }
+        .error-message::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .error-message::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #ef4444, #ec4899);
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(239, 68, 68, 0.6);
+        }
+
+        .modal-btn:active {
+            transform: translateY(0);
+        }
+
+        @keyframes warningBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-10px) scale(1.05); }
+        }
     </style>
 </head>
 <body>
+    <!-- Beautiful Custom Error Modal -->
+    <div id="errorModal" class="modal-overlay">
+        <div class="error-modal">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title" id="errorModalTitle">서비스 지연 안내</div>
+            <div class="error-message" id="errorModalMessage">에러 상세 내용</div>
+            <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 20px; text-align: left; line-height: 1.5; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+                💡 <strong>안내:</strong> 현재 무료 API 사용량(RPM/RPD) 초과로 인한 현상입니다. <strong>서버에서 1.5초 간격으로 자동 재시도</strong>를 시도하고 있으니 잠시 기다리셨다가 확인 버튼을 눌러주시면 됩니다!
+            </div>
+            <button class="modal-btn" onclick="closeErrorModal()">확인</button>
+        </div>
+    </div>
+
     <canvas id="starCanvas"></canvas>
     
     <div class="floating-icons">
@@ -687,11 +811,30 @@
                 document.getElementById('result-section').style.display = 'block';
 
             } catch (error) {
-                alert('에러 상세 내용: ' + error.message);
+                showErrorModal('작명 분석 일시적 지연', error.message);
                 console.error(error);
                 document.getElementById('submit-btn').style.display = 'block';
                 document.getElementById('loader').style.display = 'none';
             }
+        }
+
+        // Beautiful Error Modal Helpers
+        function showErrorModal(title, message) {
+            document.getElementById('errorModalTitle').innerText = title;
+            document.getElementById('errorModalMessage').innerText = message;
+            const modal = document.getElementById('errorModal');
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        }
+
+        function closeErrorModal() {
+            const modal = document.getElementById('errorModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         }
 
         function resetForm() {

@@ -15,38 +15,59 @@ app.use(express.static(__dirname));
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Robust Gemini Helper with Model Fallbacks and Safe JSON Extraction
+// Sleep helper for backoff
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Robust Gemini Helper with Model Fallbacks, Retries, and Safe JSON Extraction
 async function generateGeminiContent(prompt) {
-    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
+    // Expanded list of models including stable 1.5 versions
+    const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
     const errors = [];
+    const maxRetries = 3;
 
     for (const modelName of models) {
-        try {
-            console.log(`[Gemini] Attempting generation with model: ${modelName}...`);
-            const model = genAI.getGenerativeModel({ 
-                model: modelName,
-                generationConfig: { responseMimeType: "application/json" }
-            });
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            let text = response.text();
-            
-            // Clean up markdown block if present
-            text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-            
-            // Extract strictly from { to }
-            const startIndex = text.indexOf('{');
-            const endIndex = text.lastIndexOf('}');
-            if (startIndex !== -1 && endIndex !== -1) {
-                text = text.substring(startIndex, endIndex + 1);
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                console.log(`[Gemini] Attempting generation with model: ${modelName} (Attempt ${attempt + 1}/${maxRetries})...`);
+                const model = genAI.getGenerativeModel({ 
+                    model: modelName,
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                let text = response.text();
+                
+                // Clean up markdown block if present
+                text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+                
+                // Extract strictly from { to }
+                const startIndex = text.indexOf('{');
+                const endIndex = text.lastIndexOf('}');
+                if (startIndex !== -1 && endIndex !== -1) {
+                    text = text.substring(startIndex, endIndex + 1);
+                }
+                
+                const jsonResult = JSON.parse(text);
+                console.log(`[Gemini] Successfully generated and parsed content using model: ${modelName}!`);
+                return jsonResult;
+            } catch (err) {
+                console.error(`[Gemini] Model ${modelName} attempt ${attempt + 1} failed:`, err.message);
+                
+                // If Rate Limit (429) or quota exceeded, wait and retry
+                if (err.message.includes("429") || err.message.includes("Too Many Requests") || err.message.includes("quota")) {
+                    attempt++;
+                    if (attempt < maxRetries) {
+                        const waitTime = attempt * 1500; // Backoff: 1.5s, 3s
+                        console.warn(`[Gemini] Rate limit hit. Waiting ${waitTime}ms before retry...`);
+                        await sleep(waitTime);
+                        continue;
+                    }
+                }
+                
+                errors.push(`${modelName}: ${err.message}`);
+                break; // Try next model if retries exhausted or not a rate-limit error
             }
-            
-            const jsonResult = JSON.parse(text);
-            console.log(`[Gemini] Successfully generated and parsed content using model: ${modelName}!`);
-            return jsonResult;
-        } catch (err) {
-            console.error(`[Gemini] Model ${modelName} failed:`, err.message);
-            errors.push(`${modelName}: ${err.message}`);
         }
     }
     
